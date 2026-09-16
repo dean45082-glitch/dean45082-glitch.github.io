@@ -1,4 +1,4 @@
-const CACHE_NAME = "stay-stoic-v1";
+const CACHE_NAME = "stay-stoic-v2";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -17,8 +17,17 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+/* Network-first: intenta traer la version mas reciente de internet.
+   Solo usa la copia guardada si no hay conexion. Asi las actualizaciones
+   del codigo se ven de inmediato, no la version vieja congelada. */
 self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
